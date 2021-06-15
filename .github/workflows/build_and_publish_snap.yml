@@ -1,0 +1,63 @@
+name: Build and publish snap module
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ development ]
+  pull_request:
+    branches: [ development ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+        
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2  
+        
+    - name: Install Snapcraft
+      uses: samuelmeuli/action-snapcraft@v1
+
+    # You can now run Snapcraft shell commands
+    - name: Use Snapcraft
+      run: snapcraft --help
+
+    - name: Snap install
+      uses: samuelmeuli/action-snapcraft@v1
+      with:
+        snapcraft_token: ${{ secrets.snapcraft_token }}
+        skip_install: true # optional, if already installed in an earlier step
+        use_lxd: true
+
+    - name: Install Snapcraft with LXD
+      uses: samuelmeuli/action-snapcraft@v1
+      with:
+        use_lxd: true
+
+    - name: Snap build
+      run: sg lxd -c 'snapcraft --use-lxd --enable-experimental-extensions'
+
+    - name: Snap upload
+      id: snapcraft
+      run: |
+        snapcraft upload *.snap --release edge
+        echo ::set-output name=snap::$(ls *.snap)
+        
+#     - uses: snapcore/action-build@v1
+#       id: build
+
+#     - uses: actions/upload-artifact@v2
+#       with:
+#         name: snap
+#         path: ${{ steps.snapcraft.outputs.snap }}
+        
+#     - name: Publish snap
+#       run: sg lxd -c 'snapcraft upload --release=edge turtlebot_0.1_amd64.snap'
+
+#     - uses: snapcore/action-publish@v1
+#       with:
+#         store_login: ${{ secrets.STORE_LOGIN }}
+#         snap: 'turtlebot_0.1_amd64.snap'
+#         release: edge  
